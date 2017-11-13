@@ -1,6 +1,8 @@
 IMG = slapd
 NAME = pjakobi/$(IMG)
 VERSION = latest
+VOLETC = slapd_config
+VOLDATA = slapd_data
 
 .PHONY: build build-nocache test tag-latest push push-latest release git-tag-version
 
@@ -21,8 +23,14 @@ build-nocache:
 	docker build -t $(NAME):$(VERSION) --no-cache --rm image
 
 run:
-	docker run --name $(IMG) $(NAME):$(VERSION)
+	docker run -v $(VOLETC):/etc/ldap -v $(VOLDATA):/var/lib/ldap -p 389:389 --name $(IMG) $(NAME):$(VERSION)
 
+reset: 
+	@docker volume rm $(VOLETC) $(VOLDATA)
+	@if [ $$? -ne 0 ] ; then echo "no volume found" ; fi
+	@docker volume create --name $(VOLDATA)
+	@docker volume create --name $(VOLETC)
+	
 test:
 	env NAME=$(NAME) VERSION=$(VERSION) bats test/test.bats
 
